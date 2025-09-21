@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  go-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: "no" # Prevent automatic restarts
+    depends_on:
+      db:
+        condition: service_healthy # Wait for database to be healthy
+    environment:
+      # Connection string as a single environment variable
+      DB_CONN: "host=db port=5432 user=postgres password=secret dbname=mydb sslmode=disable"
+  db:
+    image: postgres:15
+    container_name: my_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mydb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+volumes:
+  db_data:
