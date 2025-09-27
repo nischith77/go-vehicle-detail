@@ -55,7 +55,7 @@ gcloud iam service-accounts create github-actions \
 
 ```bash
 # Replace YOUR_PROJECT_ID with your actual project ID
-export PROJECT_ID="YOUR_PROJECT_ID"
+export PROJECT_ID="projectid"
 
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:github-actions@$PROJECT_ID.iam.gserviceaccount.com" \
@@ -74,12 +74,54 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
     --role="roles/iam.serviceAccountUser"
 ```
 
-### 6. Create and Download Service Account Key
+### 6. Configure Workload Identity Federation
+
+#### Create Workload Identity Pool
 
 ```bash
-gcloud iam service-accounts keys create key.json \
-    --iam-account=github-actions@$PROJECT_ID.iam.gserviceaccount.com
+gcloud iam workload-identity-pools create "github-actions-pool" \
+    --project="$PROJECT_ID" \
+    --location="global" \
+    --display-name="GitHub Actions Pool"
 ```
+
+#### Create Workload Identity Provider
+
+```bash
+gcloud iam workload-identity-pools providers create-oidc "github-actions-provider" \
+    --project="$PROJECT_ID" \
+    --location="global" \
+    --workload-identity-pool="github-actions-pool" \
+    --display-name="GitHub Actions Provider" \
+    --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository" \
+    --attribute-condition="assertion.repository_owner=='nischith77'" \
+    --issuer-uri="https://token.actions.githubusercontent.com"
+```
+
+#### Bind Service Account to Workload Identity
+
+```bash
+# Replace YOUR_GITHUB_REPO with your GitHub repository (e.g., "nischith77/go-vehicle-detail")
+export GITHUB_REPO="repo"
+
+gcloud iam service-accounts add-iam-policy-binding \
+    --project="$PROJECT_ID" \
+    --role="roles/iam.workloadIdentityUser" \
+    --member="principalSet://iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-actions-pool/attribute.repository/$GITHUB_REPO" \
+    "github-actions@$PROJECT_ID.iam.gserviceaccount.com"
+```
+
+#### Get WIF Provider Resource Name
+
+```bash
+gcloud iam workload-identity-pools providers describe "github-actions-provider" \
+    --project="$PROJECT_ID" \
+    --location="global" \
+    --workload-identity-pool="github-actions-pool" \
+    --format="value(name)"
+```
+
+Save the output (WIF Provider resource name) for GitHub secrets configuration.
 
 ## GitHub Secrets Configuration
 
@@ -87,9 +129,12 @@ Add the following secrets to your GitHub repository (Settings → Secrets and va
 
 ### Required Secrets
 
-1. **GCP_SA_KEY**: Content of the `key.json` file created above
-2. **GCP_PROJECT_ID**: Your GCP project ID
-3. **DB_CONN**: PostgreSQL connection string for your Cloud SQL instance
+1. **WIF_PROVIDER**: Workload Identity Provider resource name from step 6 above
+   - Format: `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider`
+2. **WIF_SERVICE_ACCOUNT**: Service account email
+   - Format: `github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com`
+3. **GCP_PROJECT_ID**: Your GCP project ID
+4. **DB_CONN**: PostgreSQL connection string for your Cloud SQL instance
    - Format: `host=INSTANCE_IP port=5432 user=appuser password=your-secure-password dbname=vehicledb sslmode=require`
 
 ### Optional Secrets (with defaults)
@@ -142,6 +187,9 @@ You can monitor job executions in the GCP Console:
 
 ## Security Notes
 
-- The service account key should be kept secure and rotated regularly
+- **Enhanced Security**: Uses Workload Identity Federation (WIF) instead of long-lived service account keys
+- **Automatic Token Rotation**: Authentication tokens are automatically managed and rotated by Google Cloud
+- **Reduced Attack Surface**: No sensitive service account keys stored in GitHub secrets
+- **Principle of Least Privilege**: WIF allows fine-grained access control based on repository and branch
 - Use Cloud SQL Proxy or Private IP for database connections in production
-- Consider using Workload Identity Federation instead of service account keys for enhanced security
+- Consider restricting WIF bindings to specific branches for additional security
