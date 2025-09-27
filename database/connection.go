@@ -14,7 +14,7 @@ func ConnectDB(connStr string) *sql.DB {
 	// "host=localhost port=5432 user=postgres password=secret dbname=mydb sslmode=disable"
 
 	if connStr == "" {
-		log.Fatal("Connection string is empty  here")
+		log.Fatal("Connection string is empty here")
 	}
 
 	database, err := sql.Open("postgres", connStr)
