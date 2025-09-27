@@ -61,6 +61,7 @@ jobs:
           image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:${{ github.sha }}
           env_vars: |
             DB_CONN=${{ secrets.DB_CONN }}
+          flags: '--add-cloudsql-instances=${{ secrets.CLOUD_SQL_INSTANCE }}'
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}
