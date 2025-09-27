@@ -135,9 +135,9 @@ Add the following secrets to your GitHub repository (Settings → Secrets and va
    - Format: `github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com`
 3. **GCP_PROJECT_ID**: Your GCP project ID
 4. **CLOUD_SQL_INSTANCE**: Cloud SQL instance connection name
-   - Format: `PROJECT_ID:REGION:INSTANCE_NAME` (e.g., `mobility-tracker-467907:us-central1:vehicle-detail-db`)
+   - Format: `PROJECT_ID:REGION:INSTANCE_NAME` (e.g., `mobility-tracker-467907:us-central1:mobility-tracker`)
 5. **DB_CONN**: PostgreSQL connection string for your Cloud SQL instance
-   - For Unix socket (recommended for Cloud Run): `host=/cloudsql/PROJECT_ID:REGION:INSTANCE_NAME user=postgres password=your-password dbname=vehicledb sslmode=disable`
+   - For Unix socket (recommended for Cloud Run): `host=/cloudsql/mobility-tracker-467907:us-central1:mobility-tracker user=postgres password=your-password dbname=vehicledb sslmode=disable`
    - For TCP (alternative): `host=PRIVATE_IP port=5432 user=postgres password=your-password dbname=vehicledb sslmode=require`
 
 ### Optional Secrets (with defaults)
