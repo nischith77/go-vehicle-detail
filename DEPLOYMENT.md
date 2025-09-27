@@ -38,9 +38,9 @@ gcloud sql instances create vehicle-detail-db \
 
 gcloud sql databases create vehicledb --instance=vehicle-detail-db
 
-gcloud sql users create appuser \
+gcloud sql users create postgres \
     --instance=vehicle-detail-db \
-    --password=your-secure-password
+    --password=Nis@5020
 ```
 
 ### 4. Create Service Account
@@ -103,6 +103,7 @@ Add the following secrets to your GitHub repository (Settings → Secrets and va
 If using Cloud SQL, you'll need to:
 
 1. Create the database schema by running the `init.sql` file:
+
    ```bash
    gcloud sql connect vehicle-detail-db --user=appuser
    # Then run the contents of init.sql
@@ -113,10 +114,12 @@ If using Cloud SQL, you'll need to:
 ## Deployment
 
 The GitHub Actions workflow will automatically trigger on:
+
 - Push to `master` or `main` branch
 - Manual workflow dispatch
 
 The workflow will:
+
 1. Build the Docker image
 2. Push to Google Artifact Registry
 3. Deploy as a Cloud Run Job
@@ -133,6 +136,7 @@ gcloud run jobs execute go-vehicle-detail-job --region=us-central1
 ## Monitoring
 
 You can monitor job executions in the GCP Console:
+
 - Cloud Run → Jobs → go-vehicle-detail-job
 - View logs and execution history
 
