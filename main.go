@@ -27,9 +27,13 @@ func main() {
 
 	var result models.Response
 	err = json.NewDecoder(resp.Body).Decode(&result)
-	db.InsertToDB(conn, result)
 	if err != nil {
 		panic(err)
+	}
+
+	err = db.InsertToDB(conn, result)
+	if err != nil {
+		log.Fatalf("Database insertion failed: %v", err)
 	}
 	next := result.Collection.Next
 	for {
@@ -41,10 +45,14 @@ func main() {
 		}
 		err = json.NewDecoder(resp.Body).Decode(&result)
 		resp.Body.Close() // Close immediately after reading
-		next = result.Collection.Next
-		db.InsertToDB(conn, result)
 		if err != nil {
 			panic(err)
+		}
+
+		next = result.Collection.Next
+		err = db.InsertToDB(conn, result)
+		if err != nil {
+			log.Fatalf("Database insertion failed: %v", err)
 		}
 		if next == "" {
 			break

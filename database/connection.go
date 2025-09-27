@@ -32,7 +32,10 @@ func ConnectDB(connStr string) *sql.DB {
 	return database
 }
 
-func InsertToDB(conn *sql.DB, result models.Response) {
+func InsertToDB(conn *sql.DB, result models.Response) error {
+	errorCount := 0
+	successCount := 0
+
 	for _, vehicle := range result.Data {
 		_, err := conn.Exec(
 			`INSERT INTO models (id, make_id, make, name) VALUES ($1, $2, $3, $4)
@@ -41,6 +44,17 @@ func InsertToDB(conn *sql.DB, result models.Response) {
 		)
 		if err != nil {
 			log.Printf("Failed to insert model %d: %v", vehicle.Id, err)
+			errorCount++
+		} else {
+			successCount++
 		}
 	}
+
+	log.Printf("Insertion results - Success: %d, Errors: %d", successCount, errorCount)
+
+	if errorCount > 0 {
+		return fmt.Errorf("failed to insert %d out of %d records", errorCount, len(result.Data))
+	}
+
+	return nil
 }
